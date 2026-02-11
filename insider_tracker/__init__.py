@@ -19,6 +19,9 @@ from insider_tracker.sec_client import SECClient
 from insider_tracker.watchlist import WatchlistManager
 from insider_tracker.alerts import AlertManager, Alert
 from insider_tracker.tracker import InsiderTracker
+from insider_tracker.dashboard import DashboardGenerator
+from insider_tracker.price_client import PriceClient, StockQuote
+from insider_tracker.news_client import NewsClient, NewsArticle
 
 __all__ = [
     "InsiderTransaction",
@@ -31,4 +34,9 @@ __all__ = [
     "AlertManager",
     "Alert",
     "InsiderTracker",
+    "DashboardGenerator",
+    "PriceClient",
+    "StockQuote",
+    "NewsClient",
+    "NewsArticle",
 ]

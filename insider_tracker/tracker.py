@@ -7,6 +7,7 @@ from typing import Optional
 
 from insider_tracker.alerts import Alert, AlertManager
 from insider_tracker.analyzer import ClusterAnalysis, TransactionAnalysis, TransactionAnalyzer
+from insider_tracker.config import Config
 from insider_tracker.models import AlertThresholds, InsiderTransaction, SignificanceLevel
 from insider_tracker.sec_client import SECClient
 from insider_tracker.watchlist import WatchlistManager
@@ -31,6 +32,7 @@ class InsiderTracker:
         self.data_dir = data_dir or Path.home() / ".insider-tracker"
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
+        self.config = Config(data_dir=self.data_dir)
         self.sec_client = SECClient(user_agent=user_agent)
         self.watchlist = WatchlistManager(data_dir=self.data_dir, sec_client=self.sec_client)
         self.alert_manager = AlertManager(data_dir=self.data_dir)
@@ -341,3 +343,17 @@ class InsiderTracker:
             "unread_alerts": self.alert_manager.get_unread_count(),
             "data_dir": str(self.data_dir),
         }
+
+    def get_dashboard_generator(self):
+        """Get a dashboard generator instance.
+
+        Returns:
+            DashboardGenerator configured with this tracker's components
+        """
+        from insider_tracker.dashboard import DashboardGenerator
+
+        return DashboardGenerator(
+            config=self.config,
+            watchlist=self.watchlist,
+            sec_client=self.sec_client,
+        )

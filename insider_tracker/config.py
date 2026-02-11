@@ -34,6 +34,12 @@ class Config:
             "email": None,
             "webhook_url": None,
         },
+        "dashboard": {
+            "output_path": None,
+            "big_mover_threshold": 5.0,
+            "newsapi_key": None,
+            "insider_lookback_days": 30,
+        },
     }
 
     def __init__(self, data_dir: Optional[Path] = None):
@@ -203,6 +209,36 @@ class Config:
     def webhook_url(self, value: str) -> None:
         """Set webhook URL."""
         self.set("notifications.webhook_url", value)
+
+    @property
+    def newsapi_key(self) -> Optional[str]:
+        """Get NewsAPI.org API key."""
+        return self.get("dashboard.newsapi_key")
+
+    @newsapi_key.setter
+    def newsapi_key(self, value: str) -> None:
+        """Set NewsAPI.org API key."""
+        self.set("dashboard.newsapi_key", value)
+
+    @property
+    def big_mover_threshold(self) -> float:
+        """Get big mover threshold percentage."""
+        return float(self.get("dashboard.big_mover_threshold", 5.0))
+
+    @big_mover_threshold.setter
+    def big_mover_threshold(self, value: float) -> None:
+        """Set big mover threshold percentage."""
+        self.set("dashboard.big_mover_threshold", value)
+
+    @property
+    def dashboard_output_path(self) -> Optional[str]:
+        """Get dashboard output file path."""
+        return self.get("dashboard.output_path")
+
+    @dashboard_output_path.setter
+    def dashboard_output_path(self, value: str) -> None:
+        """Set dashboard output file path."""
+        self.set("dashboard.output_path", value)
 
     def reset_to_defaults(self) -> None:
         """Reset all configuration to defaults."""
