@@ -1,5 +1,6 @@
 """Command-line interface for insider trading tracker."""
 
+import webbrowser
 from decimal import Decimal
 from pathlib import Path
 from typing import Optional
@@ -486,6 +487,96 @@ def alerts_clear(ctx, days):
     tracker = get_tracker(ctx.obj.get("data_dir"))
     count = tracker.alert_manager.clear_old_alerts(days=days)
     console.print(f"[green]Cleared {count} old alerts[/green]")
+
+
+# Dashboard commands
+@main.group()
+def dashboard():
+    """Generate and configure the stock portfolio dashboard."""
+    pass
+
+
+@dashboard.command("generate")
+@click.option("--output", "-o", type=click.Path(), help="Output HTML file path")
+@click.option("--threshold", "-t", type=float, help="Big mover threshold percentage (default: 5.0)")
+@click.option("--open", "open_browser", is_flag=True, help="Open dashboard in browser after generating")
+@click.pass_context
+def dashboard_generate(ctx, output, threshold, open_browser):
+    """Generate the portfolio dashboard HTML file."""
+    tracker = get_tracker(ctx.obj.get("data_dir"))
+
+    portfolio_count = len(tracker.watchlist.get_portfolio())
+    watchlist_count = len(tracker.watchlist.get_watchlist())
+    total = portfolio_count + watchlist_count
+
+    if total == 0:
+        console.print(
+            "[yellow]No stocks to display.[/yellow] "
+            "Add portfolio holdings with: [bold]portfolio add TICKER -s SHARES[/bold]\n"
+            "Add watchlist entries with: [bold]watchlist add TICKER[/bold]"
+        )
+        return
+
+    generator = tracker.get_dashboard_generator()
+
+    output_path = Path(output) if output else None
+
+    with console.status(f"Generating dashboard for {total} stocks..."):
+        try:
+            result_path = generator.generate(
+                output_path=output_path,
+                threshold=threshold,
+            )
+        except Exception as e:
+            raise click.ClickException(f"Failed to generate dashboard: {e}")
+
+    console.print(f"\n[green]Dashboard generated:[/green] {result_path}")
+    console.print(f"  {portfolio_count} portfolio holdings, {watchlist_count} watchlist entries")
+
+    if open_browser:
+        webbrowser.open(f"file://{result_path.resolve()}")
+        console.print("  [dim]Opened in browser[/dim]")
+
+
+@dashboard.command("set-newsapi-key")
+@click.argument("api_key")
+@click.pass_context
+def dashboard_set_newsapi_key(ctx, api_key):
+    """Set the NewsAPI.org API key for fetching news."""
+    tracker = get_tracker(ctx.obj.get("data_dir"))
+    tracker.config.newsapi_key = api_key
+    console.print("[green]NewsAPI key saved[/green]")
+
+
+@dashboard.command("config")
+@click.option("--threshold", type=float, help="Set big mover threshold percentage")
+@click.option("--output-path", type=click.Path(), help="Set default output path")
+@click.pass_context
+def dashboard_config(ctx, threshold, output_path):
+    """View or update dashboard configuration."""
+    tracker = get_tracker(ctx.obj.get("data_dir"))
+
+    if threshold is not None:
+        tracker.config.big_mover_threshold = threshold
+        console.print(f"[green]Threshold set to {threshold}%[/green]")
+
+    if output_path is not None:
+        tracker.config.dashboard_output_path = output_path
+        console.print(f"[green]Output path set to {output_path}[/green]")
+
+    if threshold is None and output_path is None:
+        # Show current config
+        panel = Panel(
+            f"""[bold]Dashboard Configuration[/bold]
+
+Big mover threshold: {tracker.config.big_mover_threshold}%
+Output path: {tracker.config.dashboard_output_path or '(default: ~/.insider-tracker/dashboard.html)'}
+NewsAPI key: {'configured' if tracker.config.newsapi_key else '[yellow]not set[/yellow]'}
+Insider lookback: {tracker.config.get('dashboard.insider_lookback_days', 30)} days""",
+            title="Dashboard Config",
+            border_style="blue",
+        )
+        console.print(panel)
 
 
 if __name__ == "__main__":
