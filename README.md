@@ -10,6 +10,7 @@ Monitor SEC Form 4 filings for insider buying and selling activity. Track compan
 - **Significance Detection**: AI-powered analysis to identify meaningful transactions
 - **Cluster Detection**: Identify coordinated insider activity (multiple insiders buying/selling)
 - **Alerting System**: Get notified about significant insider transactions
+- **Portfolio Dashboard**: Generate an HTML dashboard with stock prices, daily P&L, and big mover explanations
 - **Rich CLI**: Beautiful command-line interface with tables and formatting
 
 ## Installation
@@ -45,6 +46,9 @@ insider-tracker lookup TSLA --days 90
 
 # Check your alerts
 insider-tracker alerts list
+
+# Generate a portfolio dashboard
+insider-tracker dashboard generate --open
 ```
 
 ## CLI Commands
@@ -120,6 +124,38 @@ insider-tracker alerts dismiss ALERT_ID
 insider-tracker alerts clear --days 30
 ```
 
+### Dashboard
+
+```bash
+# Generate dashboard HTML file
+insider-tracker dashboard generate
+
+# Generate and open in browser
+insider-tracker dashboard generate --open
+
+# Custom threshold for big movers (default: 5%)
+insider-tracker dashboard generate --threshold 3.0
+
+# Custom output path
+insider-tracker dashboard generate --output /tmp/dashboard.html
+
+# Set NewsAPI.org API key (enables news headlines for big movers)
+insider-tracker dashboard set-newsapi-key YOUR_API_KEY
+
+# View or update dashboard config
+insider-tracker dashboard config
+insider-tracker dashboard config --threshold 3.0 --output-path /tmp/dashboard.html
+```
+
+The dashboard generates a self-contained HTML file showing:
+
+- **Portfolio summary cards**: Total market value, cost basis, unrealized P&L, today's change
+- **Big movers section**: Stocks with daily moves exceeding the threshold (default 5%) with news headlines and recent insider activity
+- **Portfolio table**: All holdings with price, daily change, shares, market value, and P&L
+- **Watchlist table**: Tracked stocks with current price and daily change
+
+Stock prices are fetched via [yfinance](https://github.com/ranaroussi/yfinance) (free, no API key required). News headlines for big movers require a free API key from [NewsAPI.org](https://newsapi.org/) (100 requests/day on the free tier).
+
 ## Significance Levels
 
 Transactions are analyzed and assigned a significance level:
@@ -148,6 +184,7 @@ All data is stored locally in `~/.insider-tracker/`:
 - `alerts.json` - Alert history
 - `seen_transactions.json` - Processed transaction IDs (deduplication)
 - `config.json` - Configuration settings
+- `dashboard.html` - Generated portfolio dashboard
 
 ## Configuration
 
@@ -166,6 +203,12 @@ Edit `~/.insider-tracker/config.json` to customize:
     "ownership_change_percent": "10",
     "cluster_window_days": 7,
     "cluster_min_insiders": 3
+  },
+  "dashboard": {
+    "output_path": null,
+    "big_mover_threshold": 5.0,
+    "newsapi_key": null,
+    "insider_lookback_days": 30
   }
 }
 ```
@@ -192,6 +235,11 @@ print(f"Sales: {summary['stats']['sales']}")
 # Check portfolio exposure
 exposure = tracker.get_portfolio_exposure()
 print(f"Net sentiment: {exposure['net_insider_sentiment']}")
+
+# Generate dashboard
+generator = tracker.get_dashboard_generator()
+path = generator.generate()
+print(f"Dashboard saved to: {path}")
 ```
 
 ## SEC EDGAR API
